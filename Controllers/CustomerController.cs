@@ -51,8 +51,8 @@ namespace CustomerManagement.Controllers
         }
 
         [HttpGet]
-        [Route("{searchTerm}")]
-        public async Task<ActionResult> GetbyId(string searchTerm)
+        [Route("{searchTerm}", Name = "GetItem")]
+        public async Task<IActionResult> GetbyId(string searchTerm)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace CustomerManagement.Controllers
                 { 
                 var item = await _cosmosRepository.GetItemsAsync<CustomerEntity>(query);
                 var result = _mapper.Map<List<Customer>>(item.ToList());
-                    if(result != null && result.Count > 1 )
+                    if(result != null && result.Count >= 1 )
                     {
                         return Ok(result);
 
@@ -77,12 +77,12 @@ namespace CustomerManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<HttpStatusCode> Create(Customer customer)
+        public async Task<IActionResult> Create([FromBody]Customer customer)
         {
             var queryMapper = _mapper.Map<CustomerEntity>(customer);
             queryMapper.Id = Guid.NewGuid().ToString();
             await _cosmosRepository.AddItemAsync(queryMapper);
-            return HttpStatusCode.Created;
+            return CreatedAtRoute("GetItem", new { searchTerm = queryMapper.Id }, queryMapper);
         }
 
         [HttpPut]
@@ -99,7 +99,7 @@ namespace CustomerManagement.Controllers
                     {
                         var customer= await _cosmosRepository.UpdateItemAsync<CustomerEntity>(id, customerEntity);
                         var mapresult = _mapper.Map<Customer>(customer);
-                        return Ok(mapresult);
+                        return Accepted(mapresult);
 
                     }
                     return NotFound($"{id} does not exist");
